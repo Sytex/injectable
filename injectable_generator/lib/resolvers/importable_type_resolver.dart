@@ -58,26 +58,41 @@ class ImportableTypeResolverImpl extends ImportableTypeResolver {
   @override
   Set<String> resolveImports(Element? element) {
     final imports = <String>{};
-    final sourceIsNull = element?.firstFragment.libraryFragment == null;
-    if (sourceIsNull || _isCoreDartType(element)) return imports;
+
+    final elementLibrary = element?.library;
+    if (elementLibrary == null || elementLibrary.isDartCore) {
+      return imports;
+    }
 
     for (var lib in libs) {
       if (_isBarrelFile(lib)) continue;
+      if (lib.isDartCore) continue;
       final libExportsElement = lib.exportNamespace.definedNames2.values
           .contains(element);
-      if (_isCoreDartType(lib) || !libExportsElement) continue;
+      if (!libExportsElement) continue;
       imports.add(lib.uri.toString());
     }
+
     return imports;
   }
 
   bool _isBarrelFile(LibraryElement lib) {
-    return lib.exports.isNotEmpty && lib.topLevelElements.isEmpty;
-  }
+    final hasExports = lib.firstFragment.libraryExports.isNotEmpty;
+    if (!hasExports) return false;
 
-  bool _isCoreDartType(Element? element) {
-    return element?.firstFragment.libraryFragment?.source.fullName ==
-        'dart:core';
+    // Check if library has any of its own top-level declarations
+    // A barrel file re-exports but doesn't declare its own elements
+    final hasOwnDeclarations =
+        lib.classes.isNotEmpty ||
+        lib.enums.isNotEmpty ||
+        lib.extensions.isNotEmpty ||
+        lib.extensionTypes.isNotEmpty ||
+        lib.mixins.isNotEmpty ||
+        lib.typeAliases.isNotEmpty ||
+        lib.topLevelFunctions.isNotEmpty ||
+        lib.topLevelVariables.isNotEmpty;
+
+    return hasExports && !hasOwnDeclarations;
   }
 
   @override
