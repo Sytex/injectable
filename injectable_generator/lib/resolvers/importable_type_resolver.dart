@@ -72,7 +72,7 @@ class ImportableTypeResolverImpl extends ImportableTypeResolver {
   }
 
   bool _isBarrelFile(LibraryElement lib) {
-    return lib.libraryExports.isNotEmpty && lib.topLevelElements.isEmpty;
+    return lib.exports.isNotEmpty && lib.topLevelElements.isEmpty;
   }
 
   bool _isCoreDartType(Element? element) {
