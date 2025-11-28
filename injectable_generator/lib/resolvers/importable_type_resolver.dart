@@ -58,24 +58,21 @@ class ImportableTypeResolverImpl extends ImportableTypeResolver {
   @override
   Set<String> resolveImports(Element? element) {
     final imports = <String>{};
-    // return early if source is null or element is a core type
-    if (element?.firstFragment.libraryFragment == null ||
-        _isCoreDartType(element)) {
-      return imports;
-    }
-    libs.where((e) => e.exportNamespace.definedNames2.values.contains(element));
+    final sourceIsNull = element?.firstFragment.libraryFragment == null;
+    if (sourceIsNull || _isCoreDartType(element)) return imports;
+
     for (var lib in libs) {
-      final isBarrelFile =
-          lib.libraryExports.isNotEmpty && lib.topLevelElements.isEmpty;
-      if (isBarrelFile) {
-        continue;
-      }
-      if (!_isCoreDartType(lib) &&
-          lib.exportNamespace.definedNames2.values.contains(element)) {
-        imports.add(lib.uri.toString());
-      }
+      if (_isBarrelFile(lib)) continue;
+      final libExportsElement = lib.exportNamespace.definedNames2.values
+          .contains(element);
+      if (!libExportsElement) continue;
+      imports.add(lib.uri.toString());
     }
     return imports;
+  }
+
+  bool _isBarrelFile(LibraryElement lib) {
+    return lib.libraryExports.isNotEmpty && lib.topLevelElements.isEmpty;
   }
 
   bool _isCoreDartType(Element? element) {
